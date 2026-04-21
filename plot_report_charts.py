@@ -129,7 +129,6 @@ def plot_1_cohort_distribution(data: dict[str, Any], out: Path) -> None:
     ax1.set_xlim(-0.5, 21.5)
     ax1.grid(True, axis="y")
     ax1.legend(frameon=False)
-    fig.suptitle("柔和专业风格图表", fontsize=15, color="#2D3748", y=0.98)
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, bbox_inches="tight")
     plt.close(fig)

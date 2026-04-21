@@ -95,7 +95,7 @@ python plot_report_charts.py --row 0
 ### 第四步：渲染最终报告（文本 + 图）
 
 ```bash
-python render_report.py --json output/姓名_学号.json
+python render_report.py 
 ```
 
 输出：

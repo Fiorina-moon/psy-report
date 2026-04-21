@@ -81,7 +81,7 @@ def _chart_map(root: Path, tag: str, output_parent: Path) -> dict[str, str]:
     返回各图对应的 Markdown 相对路径（仅返回存在的文件）。
     """
     chart_files = {
-        "图表展示：群体分数分布直方图": root / "output" / "charts" / f"{tag}_1_cohort_distribution.png",
+        "图表展示：群体分数分布直方图": root / "output" / "charts" / f"1_cohort_distribution.png",
         "图表展示：焦虑程度参考对照表": root / "output" / "charts" / tag / f"{tag}_2_gad_reference.png",
         "图表展示：焦虑领域雷达图 & 排序条形图": root / "output" / "charts" / tag / f"{tag}_3_anxiety_types_overlay.png",
         "图表展示：心理机制雷达图 & 排序条形图": root / "output" / "charts" / tag / f"{tag}_4_mechanisms_overlay.png",
