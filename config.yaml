@@ -1,0 +1,29 @@
+# 心理测评个性化报告 — 基础配置
+# LLM（Paratera）：在项目根目录 .env 中配置 PARATERA_API_KEY、PARATERA_BASE_URL、
+# PARATERA_MODEL、PARATERA_MODEL_LIST（见 .env.example）。
+
+paths:
+  # 问卷星导出的 xlsx（可改为你的实际文件名）
+  results_xlsx: data/results.xlsx
+  # 给模型看的：占位符说明 + JSON Schema 要求（非最终排版正文）
+  report_template: template/report_for_model.md
+  # 题库说明（仅作资料路径保留；当前不再注入 system/user，可不配置）
+  questionnaire_doc: data/questiions.md
+  # 生成结果输出目录
+  output_dir: output
+  # 离线计分结果（python -m scoring 生成）；main 生成报告 JSON 时依赖此文件
+  scored_cohort_json: output/scored/scored_cohort.json
+
+data:
+  # 读取哪个工作表；null 表示第一个 sheet
+  sheet_name: null
+  # 用于定位某一行的列名（问卷星常见：序号 / 提交答卷时间 / 所用时间 等）；null 表示取第一行数据
+  respondent_id_column: null
+  # 当 respondent_id_column 有值时，填具体 id；null 则取 Excel 第一行有效数据
+  respondent_id: null
+
+llm:
+  temperature: 0.5
+  max_tokens: 8192
+  # 若接口不支持 json_object，可改为 false
+  response_format_json: true
