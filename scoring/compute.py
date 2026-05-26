@@ -32,13 +32,13 @@ ANXIETY_KEYS = (
     "经济焦虑",
     "外貌焦虑",
     "学业焦虑",
-    "考试焦虑",
-    "AI使用焦虑",
+    "AI学习焦虑",
+    "AI替代焦虑",
 )
 
 MECH_KEYS = (
     "自我价值学业绑定",
-    "社会比较倾向",
+    "他人评价条件化",
     "失败恐惧",
     "不确定性不耐受",
     "冒充者综合征",
@@ -65,18 +65,41 @@ def _iloc_range(row: pd.Series, a: int, b: int) -> list[Any]:
     return [row.iloc[i] for i in range(a, b + 1)]
 
 
-def gad7_total(row: pd.Series) -> float | None:
+def _anxiety_total_column_index(df: pd.DataFrame) -> int | None:
+    """问卷星导出中的「焦虑」汇总列（GAD-7 总分 = 该列 − 7，范围 0–21）。"""
+    for i, c in enumerate(df.columns):
+        if str(c).strip() == "焦虑":
+            return i
+    return None
+
+
+def gad7_total(row: pd.Series, df: pd.DataFrame | None = None) -> float | None:
+    """GAD-7 总分（0–21）：优先用导出表「焦虑」列 − 7；否则七题 1–4 求和再减 7。"""
+    if df is not None:
+        ix = _anxiety_total_column_index(df)
+        if ix is not None:
+            cell = row.iloc[ix]
+            if not pd.isna(cell):
+                try:
+                    return float(cell) - 7.0
+                except (TypeError, ValueError):
+                    pass
     a, b = I["gad"]
-    vals = [likert.map_gad_phq(v) for v in _iloc_range(row, a, b)]
+    vals = [likert.map_gad_phq_1_4(v) for v in _iloc_range(row, a, b)]
     if any(v is None for v in vals):
         return None
-    return float(sum(vals))
+    return float(sum(vals)) - 7.0
 
 
-def ai_mean(row: pd.Series) -> float | None:
+def _aias_means(row: pd.Series) -> tuple[float | None, float | None]:
+    """AIAS 14 题：前 7 题为 AI 学习焦虑，后 7 题为 AI 替代焦虑（1–7 均值）。"""
     a, b = I["aias"]
     vals = [likert.map_aias_7(v) for v in _iloc_range(row, a, b)]
-    return likert.nanmean(vals)
+    if len(vals) != 14:
+        return None, None
+    learn = likert.nanmean(vals[:7])
+    repl = likert.nanmean(vals[7:])
+    return learn, repl
 
 
 def anxiety_type_means(row: pd.Series) -> dict[str, float | None]:
@@ -84,7 +107,6 @@ def anxiety_type_means(row: pd.Series) -> dict[str, float | None]:
     raw = [likert.map_anxiety_type_5(v) for v in _iloc_range(row, a, b)]
     if len(raw) != 24:
         return {k: None for k in ANXIETY_KEYS}
-    ai_m = ai_mean(row)
     groups = [
         raw[0:4],
         raw[4:8],
@@ -92,12 +114,19 @@ def anxiety_type_means(row: pd.Series) -> dict[str, float | None]:
         raw[13:16],
         raw[16:20],
         raw[20:23],
-        [raw[23]],
     ]
     out: dict[str, float | None] = {}
-    for label, vs in zip(ANXIETY_KEYS[:-1], groups, strict=True):
+    for label, vs in zip(ANXIETY_KEYS[:6], groups, strict=True):
         out[label] = likert.nanmean(vs)
-    out["AI使用焦虑"] = ai_m
+    learn, repl = _aias_means(row)
+    if learn is not None:
+        out["AI学习焦虑"] = likert.scale_to_1_5(learn, 1.0, 7.0)
+    else:
+        out["AI学习焦虑"] = None
+    if repl is not None:
+        out["AI替代焦虑"] = likert.scale_to_1_5(repl, 1.0, 7.0)
+    else:
+        out["AI替代焦虑"] = None
     return out
 
 
@@ -178,15 +207,6 @@ def negative_events_string(cell: Any) -> str:
     return "、".join(ev) if ev else ""
 
 
-def prominent_trait_phrase(bfi: dict[str, float | None]) -> str:
-    pairs = [(BFI_TRAIT_CN[k], v) for k, v in bfi.items() if v is not None]
-    if len(pairs) < 2:
-        return "（人格维度数据不足）"
-    pairs.sort(key=lambda x: -x[1])
-    (a, _), (b, _) = pairs[0], pairs[1]
-    return f"{a}、{b} 相对突出"
-
-
 def rank_top_keys(scores: dict[str, float | None], labels: tuple[str, ...], k: int = 3) -> list[str]:
     items = [(lab, scores.get(lab)) for lab in labels]
     items = [(a, b) for a, b in items if b is not None]
@@ -194,7 +214,7 @@ def rank_top_keys(scores: dict[str, float | None], labels: tuple[str, ...], k: i
     return [a for a, _ in items[:k]]
 
 
-def mechanism_vector(row: pd.Series) -> dict[str, float | None]:
+def _mechanism_raw(row: pd.Series) -> dict[str, float | None]:
     return {
         "self_worth_academic": csws_academic_mean(row),
         "social_comparison": incom_mean(row),
@@ -202,6 +222,22 @@ def mechanism_vector(row: pd.Series) -> dict[str, float | None]:
         "intolerance_uncertainty": ius_mean(row),
         "impostor": cips_sum(row),
     }
+
+
+def mechanism_vector(row: pd.Series) -> dict[str, float | None]:
+    raw = _mechanism_raw(row)
+    out = dict(raw)
+    sw = raw.get("self_worth_academic")
+    if sw is not None:
+        out["self_worth_academic"] = likert.scale_to_1_5(sw, 1.0, 7.0)
+    ff = raw.get("failure_fear")
+    if ff is not None:
+        out["failure_fear"] = likert.scale_to_1_5(ff, -10.0, 10.0)
+    imp = raw.get("impostor")
+    if imp is not None:
+        out["impostor"] = likert.scale_to_1_5(imp, 6.0, 42.0)
+    # 社会比较（他人评价条件化，INCOM）本身为 1–5 均值，无需再缩放
+    return out
 
 
 def rank_mechanisms_by_z(
@@ -241,7 +277,7 @@ def compute_student_block(
     cohort_mechs: list[dict[str, float | None]],
     top_events: list[tuple[str, int]],
 ) -> dict[str, Any]:
-    gad = gad7_total(row)
+    gad = gad7_total(row, df)
     atype = anxiety_type_means(row)
     mech = mechanism_vector(row)
     bfi = bfi_trait_means(row)
@@ -295,8 +331,7 @@ def compute_student_block(
         "top_mechanism_1": top_m[0],
         "top_mechanism_2": top_m[1],
         "top_mechanism_3": top_m[2],
-        "personality_analysis_text": None,
-        "prominent_personality_trait": prominent_trait_phrase(bfi),
+        "mechanism_explanation_text": None,
         "personalized_advice_list": None,
     }
 
@@ -342,7 +377,7 @@ def run_scoring(xlsx: Path, out_json: Path) -> None:
     cohort_gad: list[float] = []
     cohort_mechs: list[dict[str, float | None]] = []
     for _, row in df.iterrows():
-        g = gad7_total(row)
+        g = gad7_total(row, df)
         if g is not None:
             cohort_gad.append(g)
         cohort_mechs.append(mechanism_vector(row))

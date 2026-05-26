@@ -96,10 +96,12 @@ python plot_report_charts.py --row 0
 
 输出：
 
-- `output/charts/姓名_学号_1_cohort_distribution.png`
+- `output/charts/1_cohort_distribution.png`（全体分布，共用）
 - `output/charts/姓名_学号/姓名_学号_2_gad_reference.png`
 - `output/charts/姓名_学号/姓名_学号_3_anxiety_types_overlay.png`
 - `output/charts/姓名_学号/姓名_学号_4_mechanisms_overlay.png`
+
+报告结构见 `template/report.md`（焦虑状态 → 焦虑原因 → 焦虑机制 → 总结与建议）；排版模板为 `template/report.typ`。
 
 ### 第四步：渲染最终报告（文本 + 图）
 

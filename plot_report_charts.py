@@ -7,6 +7,8 @@ from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 
 
 ANXIETY_KEYS = [
@@ -16,12 +18,12 @@ ANXIETY_KEYS = [
     "经济焦虑",
     "外貌焦虑",
     "学业焦虑",
-    "考试焦虑",
-    "AI使用焦虑",
+    "AI学习焦虑",
+    "AI替代焦虑",
 ]
 MECH_KEYS = [
     "自我价值学业绑定",
-    "社会比较倾向",
+    "他人评价条件化",
     "失败恐惧",
     "不确定性不耐受",
     "冒充者综合征",
@@ -113,6 +115,63 @@ def _radar(ax: plt.Axes, labels: list[str], cohort: list[float], student: list[f
     ax.legend(loc="upper right", bbox_to_anchor=(1.25, 1.15), frameon=False, fontsize=9)
 
 
+def _sort_by_student(
+    labels: list[str], student: list[float], cohort: list[float] | None = None
+) -> tuple[list[str], list[float], list[float] | None]:
+    cohort_vals = cohort if cohort is not None else [np.nan] * len(labels)
+    ranked = sorted(
+        zip(labels, student, cohort_vals, strict=True),
+        key=lambda t: float(t[1]) if not np.isnan(t[1]) else float("-inf"),
+        reverse=True,
+    )
+    out_labels = [t[0] for t in ranked]
+    out_student = [t[1] for t in ranked]
+    out_cohort = [t[2] for t in ranked] if cohort is not None else None
+    return out_labels, out_student, out_cohort
+
+
+def _sorted_bar_chart(
+    ax: plt.Axes,
+    labels: list[str],
+    student: list[float],
+    cohort: list[float] | None,
+    *,
+    title: str,
+    show_cohort_mean_line: bool,
+    label_rotation: int,
+) -> None:
+    sort_labels, sort_student, sort_cohort = _sort_by_student(labels, student, cohort)
+    x = np.arange(len(sort_labels))
+    bar_w = 0.55
+    ax.bar(x, sort_student, width=bar_w, color="#E7A9B1", edgecolor="white", linewidth=0.8)
+
+    if show_cohort_mean_line and sort_cohort is not None:
+        for i, mean in enumerate(sort_cohort):
+            if np.isnan(mean):
+                continue
+            ax.plot(
+                [i - bar_w / 2, i + bar_w / 2],
+                [mean, mean],
+                color="#7AA6D6",
+                linewidth=2.2,
+                linestyle="--",
+                zorder=3,
+            )
+        legend_handles = [
+            Patch(facecolor="#E7A9B1", edgecolor="white", label="我"),
+            Line2D([0], [0], color="#7AA6D6", linewidth=2.2, linestyle="--", label="样本均值"),
+        ]
+    else:
+        legend_handles = [Patch(facecolor="#E7A9B1", edgecolor="white", label="我")]
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(sort_labels, rotation=label_rotation, ha="right")
+    ax.set_title(title)
+    ax.set_ylabel("得分")
+    ax.grid(True, axis="y")
+    ax.legend(handles=legend_handles, frameon=False)
+
+
 def plot_1_cohort_distribution(data: dict[str, Any], out: Path) -> None:
     gad_vals = [s["scales"]["gad7_total"] for s in data["students"] if s["scales"]["gad7_total"] is not None]
     gad_vals = [float(v) for v in gad_vals]
@@ -193,16 +252,15 @@ def plot_3_anxiety_overlay(data: dict[str, Any], student: dict[str, Any], out: P
     ax1 = fig.add_subplot(1, 2, 1, projection="polar")
     ax2 = fig.add_subplot(1, 2, 2)
     _radar(ax1, ANXIETY_KEYS, cohort_anx, stu_anx, "焦虑领域雷达图")
-    x = np.arange(len(ANXIETY_KEYS))
-    w = 0.38
-    ax2.bar(x - w / 2, cohort_anx, width=w, color="#AFC8E8", label="全体均值")
-    ax2.bar(x + w / 2, stu_anx, width=w, color="#E7A9B1", label="我")
-    ax2.set_xticks(x)
-    ax2.set_xticklabels(ANXIETY_KEYS, rotation=30, ha="right")
-    ax2.set_title("焦虑领域排序条形图")
-    ax2.set_ylabel("得分")
-    ax2.grid(True, axis="y")
-    ax2.legend(frameon=False)
+    _sorted_bar_chart(
+        ax2,
+        ANXIETY_KEYS,
+        stu_anx,
+        cohort_anx,
+        title="焦虑领域排序条形图",
+        show_cohort_mean_line=True,
+        label_rotation=30,
+    )
     fig.suptitle("图3｜焦虑领域雷达图 & 排序条形图", fontsize=14, color="#2D3748", y=1.02)
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, bbox_inches="tight")
@@ -218,17 +276,15 @@ def plot_4_mechanism_overlay(data: dict[str, Any], student: dict[str, Any], out:
     ax1 = fig.add_subplot(1, 2, 1, projection="polar")
     ax2 = fig.add_subplot(1, 2, 2)
     _radar(ax1, MECH_KEYS, cohort_mech, stu_mech, "心理机制雷达图")
-
-    x = np.arange(len(MECH_KEYS))
-    w = 0.38
-    ax2.bar(x - w / 2, cohort_mech, width=w, color="#AFC8E8", label="全体均值")
-    ax2.bar(x + w / 2, stu_mech, width=w, color="#E7A9B1", label="我")
-    ax2.set_xticks(x)
-    ax2.set_xticklabels(MECH_KEYS, rotation=20, ha="right")
-    ax2.set_title("心理机制排序条形图")
-    ax2.set_ylabel("得分")
-    ax2.grid(True, axis="y")
-    ax2.legend(frameon=False)
+    _sorted_bar_chart(
+        ax2,
+        MECH_KEYS,
+        stu_mech,
+        cohort_mech,
+        title="心理机制排序条形图",
+        show_cohort_mean_line=True,
+        label_rotation=20,
+    )
 
     fig.suptitle("图4｜心理机制雷达图 & 排序条形图", fontsize=14, color="#2D3748", y=1.02)
     out.parent.mkdir(parents=True, exist_ok=True)

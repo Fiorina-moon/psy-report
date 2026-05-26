@@ -16,8 +16,9 @@ PLACEHOLDER_RE = re.compile(r"\{\{\s*([A-Za-z0-9_]+)\s*\}\}")
 # 与 template/report.typ 中 chart-box 占位一一对应（不转义，填入 image 代码）
 CHART_SLOT_MARKERS: tuple[tuple[str, str], ...] = (
     ("chart_slot_1", "图表展示：群体分数分布直方图"),
-    ("chart_slot_2", "图表展示：焦虑领域雷达图 & 排序条形图"),
-    ("chart_slot_3", "图表展示：心理机制雷达图 & 排序条形图"),
+    ("chart_slot_2", "图表展示：焦虑程度参考对照表"),
+    ("chart_slot_3", "图表展示：焦虑领域雷达图 & 排序条形图"),
+    ("chart_slot_4", "图表展示：心理机制雷达图 & 排序条形图"),
 )
 CHART_SLOT_KEYS = frozenset(k for k, _ in CHART_SLOT_MARKERS)
 RAW_TYPST_KEYS = CHART_SLOT_KEYS | frozenset({"cover_image"})

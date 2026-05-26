@@ -16,6 +16,7 @@ def _is_skip(v: Any) -> bool:
 
 
 def map_gad_phq(v: Any) -> float | None:
+    """GAD-7 / PHQ-9 单题标准分（0–3），七题直接求和即 0–21 总分。"""
     if _is_skip(v):
         return None
     s = str(v).strip()
@@ -24,6 +25,20 @@ def map_gad_phq(v: Any) -> float | None:
         "几天": 1.0,
         "一半以上的日子": 2.0,
         "几乎每天": 3.0,
+    }
+    return m.get(s)
+
+
+def map_gad_phq_1_4(v: Any) -> float | None:
+    """问卷星「焦虑」维度常用计分：单题 1–4，七题之和再减 7 得 GAD-7 总分（0–21）。"""
+    if _is_skip(v):
+        return None
+    s = str(v).strip()
+    m = {
+        "完全不会": 1.0,
+        "几天": 2.0,
+        "一半以上的日子": 3.0,
+        "几乎每天": 4.0,
     }
     return m.get(s)
 
@@ -159,3 +174,12 @@ def nan_sum(vals: list[float | None]) -> float | None:
     if any(v is None for v in vals):
         return None
     return float(sum(v for v in vals if v is not None))
+
+
+def scale_to_1_5(value: float, lo: float, hi: float) -> float:
+    """将 [lo, hi] 线性映射到 [1, 5]（问卷星机制维度与焦虑领域对比用）。"""
+    if hi <= lo:
+        return 3.0
+    t = (float(value) - lo) / (hi - lo)
+    t = max(0.0, min(1.0, t))
+    return 1.0 + 4.0 * t

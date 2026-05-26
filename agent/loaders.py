@@ -178,12 +178,11 @@ REPORT_JSON_KEYS: tuple[str, ...] = (
     "top_mechanism_1",
     "top_mechanism_2",
     "top_mechanism_3",
-    "personality_analysis_text",
-    "prominent_personality_trait",
+    "mechanism_explanation_text",
     "personalized_advice_list",
 )
 
-NARRATIVE_KEYS = frozenset({"personality_analysis_text", "personalized_advice_list"})
+NARRATIVE_KEYS = frozenset({"mechanism_explanation_text", "personalized_advice_list"})
 
 
 def merge_report_json(prefill: dict[str, Any], model_obj: dict[str, Any]) -> dict[str, Any]:
