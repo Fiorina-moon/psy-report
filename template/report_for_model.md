@@ -1,6 +1,6 @@
 # 模型任务说明：生成报告占位符数据（仅 JSON）
 
-人类可读的完整报告排版见 `template/report.md`（`{{ 键名 }}` 占位）。**量表分、样本均值、百分位、焦虑/机制排序、人格标签等已由程序离线写入 `student.report_json_prefill`**；你**不要**改动这些键的值。你仅撰写 **`personality_analysis_text`** 与 **`personalized_advice_list`**，并须输出包含**全部键**的完整 JSON（未让你改写的键请从 `report_json_prefill` 原样抄写）。可结合 `student.scales` 与 `cohort` 理解语境；题库在 system 中按需查阅。
+人类可读的完整报告排版见 `template/report.typ`（`{{ 键名 }}` 占位）；渲染时会将本字段中的 Markdown 转为 Typst。**量表分、样本均值、百分位、焦虑/机制排序、人格标签等已由程序离线写入 `student.report_json_prefill`**；你**不要**改动这些键的值。你仅撰写 **`personality_analysis_text`** 与 **`personalized_advice_list`**，并须输出包含**全部键**的完整 JSON（未让你改写的键请从 `report_json_prefill` 原样抄写）。可结合 `student.scales` 与 `cohort` 理解语境；题库在 system 中按需查阅。
 
 ## 键名、类型与填写要求
 

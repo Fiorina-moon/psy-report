@@ -237,7 +237,7 @@ def plot_4_mechanism_overlay(data: dict[str, Any], student: dict[str, Any], out:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="生成 report.md 对应的 4 张图")
+    parser = argparse.ArgumentParser(description="生成 report.typ 对应的 4 张图")
     parser.add_argument("--scored", type=Path, default=Path("output/scored/scored_cohort.json"))
     parser.add_argument("--row", type=int, default=None, help="学生 row_index，默认最小 row_index")
     parser.add_argument("--outdir", type=Path, default=Path("output/charts"))
